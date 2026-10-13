@@ -1,0 +1,205 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>全自动激活码发卡台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans antialiased min-h-screen">
+
+    <div class="w-full max-w-md mx-auto bg-white min-h-screen shadow-md flex flex-col relative">
+        
+        <!-- 顶部导航 -->
+        <div class="bg-gray-900 text-white p-5 sticky top-0 z-10 shadow-md">
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-xl font-bold flex items-center"><span class="mr-2">💳</span> 移动发卡台</h1>
+                <div class="flex items-center space-x-3">
+                    <span id="stats" class="text-xs bg-gray-700 px-2 py-1 rounded-full text-gray-300">库存: 0</span>
+                </div>
+            </div>
+            <button id="generate-btn" onclick="generateCodes(10)" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-lg text-sm transition shadow flex justify-center items-center">
+                + 生成 10 个新码并自动同步云端
+            </button>
+        </div>
+
+        <!-- 列表区 -->
+        <div class="flex-1 p-4 overflow-y-auto pb-20">
+            <div class="flex justify-between items-end mb-3">
+                <h2 class="text-sm font-bold text-gray-500">我的卡密库</h2>
+                <button onclick="clearAll()" class="text-xs text-gray-400 hover:text-red-500 underline">清空手机记录</button>
+            </div>
+            
+            <ul id="code-list" class="space-y-3"></ul>
+        </div>
+
+        <!-- 全局提示框 -->
+        <div id="toast" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-full text-sm shadow-lg transition-opacity duration-300 opacity-0 pointer-events-none z-50">
+            操作成功
+        </div>
+    </div>
+
+    <script>
+        // 本地存储键名（用于记录生成历史）
+        const DB_KEY = 'roi_admin_codes';
+        let codes = JSON.parse(localStorage.getItem(DB_KEY)) || [];
+        
+        // 你的专属 Vercel 数据库配置 (已硬编码，无需手动填)
+        const KV_URL = 'https://shining-marmot-230672.upstash.io';
+        const KV_TOKEN = 'gQAAAAAAA4UQAAIgcDJjMWVlNDMxMzU1NWI0NTE3YmE3YjUyMTQ4MDMzOTc3NQ';
+
+        // 页面加载时渲染列表
+        renderList();
+
+        // 生成卡密并自动同步云端
+        async function generateCodes(count) {
+            const btn = document.getElementById('generate-btn');
+            btn.innerHTML = '<span class="animate-spin mr-2">⚙️</span> 正在生成并同步云端...';
+            btn.disabled = true;
+
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; 
+            let newCodes = [];
+            
+            for (let i = 0; i < count; i++) {
+                let code = '';
+                for (let j = 0; j < 8; j++) {
+                    code += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                newCodes.push(code);
+            }
+
+            // 构建发给 Vercel KV 的 MSET 指令数组
+            let command = ["MSET"];
+            newCodes.forEach(code => {
+                command.push(`code:${code}`);
+                command.push('unused');
+            });
+
+            try {
+                // 自动发送请求到 Vercel 数据库
+                const response = await fetch(KV_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${KV_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(command)
+                });
+                
+                const result = await response.json();
+                
+                if (result.result === "OK") {
+                    // 云端写入成功后，保存到本地手机展示
+                    newCodes.forEach(code => {
+                        codes.unshift({ code: code, status: 'unused', date: new Date().toLocaleDateString() });
+                    });
+                    saveData();
+                    renderList();
+                    showToast(`成功生成 ${count} 个码并已生效！`);
+                } else {
+                    alert('云同步失败：返回异常，请检查网络。');
+                }
+            } catch (e) {
+                alert('网络请求失败，请检查手机网络是否畅通。');
+            } finally {
+                btn.innerHTML = '+ 生成 10 个新码并自动同步云端';
+                btn.disabled = false;
+            }
+        }
+
+        function renderList() {
+            const listEl = document.getElementById('code-list');
+            listEl.innerHTML = '';
+            
+            let unusedCount = codes.filter(c => c.status === 'unused').length;
+            document.getElementById('stats').innerText = `剩余可用: ${unusedCount} / 总计: ${codes.length}`;
+
+            if(codes.length === 0) {
+                listEl.innerHTML = `<p class="text-center text-gray-400 text-sm mt-10">库存为空，请点击上方按钮生成并同步</p>`;
+                return;
+            }
+
+            codes.forEach((item, index) => {
+                const isUsed = item.status === 'used';
+                const li = document.createElement('li');
+                li.className = `p-4 rounded-xl border flex flex-col transition shadow-sm ${isUsed ? 'bg-gray-50 border-gray-200' : 'bg-white border-red-100'}`;
+                
+                li.innerHTML = `
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="font-mono text-lg font-bold tracking-widest ${isUsed ? 'text-gray-400 line-through' : 'text-gray-800'}">${item.code}</span>
+                        <button onclick="toggleStatus(${index})" class="text-xs px-3 py-1 rounded-full font-bold ${isUsed ? 'bg-gray-200 text-gray-500' : 'bg-red-100 text-red-600'}">
+                            ${isUsed ? '已发给客户' : '待发货'}
+                        </button>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs text-gray-400">生成于: ${item.date}</span>
+                        <button onclick="copyToClipboard('${item.code}')" class="text-xs bg-gray-800 text-white px-4 py-2 rounded-lg font-bold shadow ${isUsed ? 'opacity-50' : 'hover:bg-black'}">
+                            一键复制卡密
+                        </button>
+                    </div>
+                `;
+                listEl.appendChild(li);
+            });
+        }
+
+        // 仅在本地标记为“已发送给客户”，方便你自己在手机上记账
+        function toggleStatus(index) {
+            codes[index].status = codes[index].status === 'unused' ? 'used' : 'unused';
+            saveData();
+            renderList();
+        }
+
+        function copyToClipboard(text) {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast('已复制，快去发给买家吧！');
+                }).catch(err => fallbackCopyTextToClipboard(text));
+            } else {
+                fallbackCopyTextToClipboard(text);
+            }
+        }
+
+        // 兼容微信浏览器等环境的复制功能
+        function fallbackCopyTextToClipboard(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.top = "0";
+            textArea.style.left = "0";
+            textArea.style.position = "fixed";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showToast('已复制，快去发给买家吧！');
+            } catch (err) {
+                alert('复制失败，请手动长按复制: ' + text);
+            }
+            document.body.removeChild(textArea);
+        }
+
+        function clearAll() {
+            if(confirm('清空操作只会删除手机本地的记录列表，不会影响云端已生效的码。确定清空吗？')) {
+                codes = [];
+                saveData();
+                renderList();
+                showToast('列表已清空');
+            }
+        }
+
+        function saveData() { 
+            localStorage.setItem(DB_KEY, JSON.stringify(codes)); 
+        }
+        
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.classList.remove('opacity-0');
+            setTimeout(() => toast.classList.add('opacity-0'), 2000);
+        }
+    </script>
+</body>
+</html>
+
+```
