@@ -1,3 +1,31 @@
+目前的建议是完全按照《高性价比人生指南》中具有明确实验数据支撑（A/B级证据）的条款提炼而来的。为了适配小红书的传播语境，我在文案上做了“网感化”包装，但**核心操作指令100%忠于原书**。
+
+以下是测试结果处方与原书的对应关系：
+
+* **物理隔离/切断打断**：对应第3节第1条（工作时手机放到视线外）和第7条（一次只做一件事，不边开会边回消息）。
+
+
+* **除以二法则**：对应第3节第21条（觉得所有人看见自己出丑时，把估计的人数除以二）。
+
+
+* **强制斩断反刍**：对应第3节第14条（反复回想糟心事时，换个需要动手的活）。
+
+
+* **无视沉没成本与人造死线**：对应第4节第3条（决定是否继续时只看未来投入与回报）和第8条（给没有外部截止的事自己定一个日期）。
+
+
+* **23:00强制熔断与降火别靠砸**：对应第3节第10条（深夜不做重大决定）和第23条（生气别靠砸东西发泄，靠让身体慢下来）。
+
+
+
+针对您的页面优化需求，我已经对代码进行了全面升级：
+
+1. **激活页面正名**：在输入激活码的醒目位置，以专属Badge（徽章）的形式标明了“基于《高性价比人生指南》硬核数据研发”。
+2. **结果页双轨拆分**：将结果页拆分为两块。第一部分是**纯净的“画像海报”**（包含分数、网感标签、头像和您的引流二维码），专供用户一键生成图片发朋友圈或小红书；第二部分是**独立的“操作建议报告”**，放在海报下方供用户深度阅读，不干扰截图传播的视觉焦点。
+
+以下是更新后的完整代码：
+
+```html
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -10,6 +38,9 @@
         .hidden { display: none; }
         .poster-bg { background: linear-gradient(135deg, #fffcfc 0%, #fff1f1 100%); }
         .capture-container { width: 100%; max-width: 400px; margin: 0 auto; }
+        /* 隐藏滚动条但允许滚动 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans antialiased min-h-screen flex justify-center items-center">
@@ -18,12 +49,16 @@
         
         <!-- 1. 激活码验证区 -->
         <div id="auth-screen" class="p-8 flex flex-col justify-center h-full flex-1">
-            <div class="text-center mb-10">
+            <div class="text-center mb-8">
                 <div class="text-5xl mb-4">🔋</div>
-                <h1 class="text-2xl font-bold text-gray-800 mb-2">隐性内耗指数自测</h1>
-                <p class="text-sm text-gray-500">请输入您的专属激活码</p>
+                <h1 class="text-2xl font-bold text-gray-800 mb-3">隐性内耗指数自测</h1>
+                <!-- 标明出处 -->
+                <div class="inline-block bg-red-50 border border-red-100 rounded-full px-3 py-1 mb-4">
+                    <p class="text-xs text-red-500 font-bold tracking-widest">基于《高性价比人生指南》研发</p>
+                </div>
+                <p class="text-sm text-gray-500 mt-2">请输入您的专属激活码进入测试</p>
             </div>
-            <input type="text" id="access-code" placeholder="请输入激活码" class="w-full px-4 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent text-center font-mono tracking-widest uppercase mb-4 transition bg-gray-50">
+            <input type="text" id="access-code" placeholder="请输入激活码" class="w-full px-4 py-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent text-center font-mono tracking-widest uppercase mb-4 transition bg-gray-50 text-lg">
             <p id="auth-error" class="text-red-500 text-sm text-center hidden mb-4">激活码无效或已被使用，请核对</p>
             <button onclick="verifyCode()" id="verify-btn" class="w-full bg-red-500 text-white font-bold py-4 rounded-xl hover:bg-red-600 transition shadow-lg text-lg">验证并开始测试</button>
         </div>
@@ -32,12 +67,10 @@
         <div id="question-screen" class="hidden flex-1 flex flex-col p-6 bg-white">
             <div class="mb-6">
                 <div class="flex justify-between items-end mb-2">
-                    <!-- 移除固定颜色，交由 JS 动态控制 -->
                     <span id="dimension-title" class="text-xs font-bold px-2 py-1 rounded">加载中...</span>
                     <span class="text-sm font-bold text-gray-400"><span id="progress-text" class="text-lg">1</span> / 15</span>
                 </div>
                 <div class="w-full bg-gray-100 rounded-full h-2">
-                    <!-- 移除固定颜色，交由 JS 动态控制 -->
                     <div id="progress-bar" class="h-2 rounded-full transition-all duration-300" style="width: 6.66%"></div>
                 </div>
             </div>
@@ -49,52 +82,65 @@
         </div>
 
         <!-- 3. 生成中动画 -->
-        <div id="loading-screen" class="hidden p-8 flex flex-col justify-center items-center h-full flex-1">
+        <div id="loading-screen" class="hidden p-8 flex flex-col justify-center items-center h-full flex-1 bg-white">
             <div class="animate-spin text-5xl mb-4">⚙️</div>
-            <h2 class="text-xl font-bold text-gray-700">正在生成诊断书...</h2>
-            <p class="text-sm text-gray-400 mt-2">交叉比对数据库中</p>
+            <h2 class="text-xl font-bold text-gray-700">正在生成诊断报告...</h2>
+            <p class="text-sm text-gray-400 mt-2">交叉比对指南数据库中</p>
         </div>
 
-        <!-- 4. 结果海报生成区 -->
-        <div id="result-screen" class="hidden flex-col h-full bg-gray-50 overflow-y-auto">
-            <div id="capture-area" class="capture-container poster-bg p-6 pb-8 relative shadow-sm">
-                <div class="text-center border-b border-red-100 pb-4 mb-6">
-                    <p class="text-xs text-red-400 tracking-widest mb-1">PERSONAL ENERGY REPORT</p>
-                    <h2 class="text-2xl font-extrabold text-gray-800">隐性内耗诊断书</h2>
-                </div>
-                
-                <div class="flex items-center justify-between bg-white p-5 rounded-2xl shadow-sm mb-6 border border-gray-50">
-                    <div class="flex-1 pr-4">
-                        <p class="text-sm text-gray-400 mb-1">内耗指数得分</p>
-                        <p class="text-4xl font-black text-red-500"><span id="score"></span><span class="text-lg text-gray-400 font-normal"> / 45</span></p>
-                        <h3 id="result-title" class="text-lg font-bold text-gray-800 mt-2 leading-tight"></h3>
+        <!-- 4. 结果展示区 (拆分为可截图海报 + 操作建议) -->
+        <div id="result-screen" class="hidden flex-col h-full bg-gray-100 overflow-y-auto no-scrollbar">
+            
+            <!-- 【图1】专供截图传播的画像海报区 -->
+            <div class="p-4 pb-2">
+                <div id="capture-area" class="capture-container poster-bg p-6 rounded-2xl shadow-sm relative overflow-hidden border border-red-50">
+                    <div class="text-center border-b border-red-100 pb-4 mb-6">
+                        <p class="text-xs text-red-400 tracking-widest mb-1">PERSONAL ENERGY REPORT</p>
+                        <h2 class="text-2xl font-extrabold text-gray-800">隐性内耗诊断书</h2>
                     </div>
-                    <div id="result-avatar" class="text-6xl drop-shadow-md"></div>
-                </div>
-
-                <div class="bg-white/80 rounded-xl p-5 mb-6 border border-red-50">
-                    <h4 class="text-sm font-bold text-red-500 mb-3 flex items-center">
-                        <span class="mr-2">💡</span>你的专属防漏电处方
-                    </h4>
-                    <ul id="advice-list" class="space-y-3 text-sm text-gray-700 leading-relaxed"></ul>
-                </div>
-
-                <div class="flex items-center justify-between pt-4 border-t border-gray-200 mt-4">
-                    <div class="text-left">
-                        <p class="text-xs font-bold text-gray-800">长按保存你的专属诊断卡</p>
-                        <p class="text-[10px] text-gray-400 mt-1">搜索同名小红书获取更多高阶指南</p>
+                    
+                    <div class="flex items-center justify-between bg-white/80 p-5 rounded-xl shadow-sm mb-4">
+                        <div class="flex-1 pr-4">
+                            <p class="text-sm text-gray-400 mb-1">内耗指数得分</p>
+                            <p class="text-4xl font-black text-red-500"><span id="score"></span><span class="text-lg text-gray-400 font-normal"> / 45</span></p>
+                            <h3 id="result-title" class="text-lg font-bold text-gray-800 mt-2 leading-tight"></h3>
+                        </div>
+                        <div id="result-avatar" class="text-6xl drop-shadow-md"></div>
                     </div>
-                    <!-- 替换为你自己的引流二维码图片 -->
-                    <div class="w-12 h-12 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-400">QR码</div>
-                </div>
-            </div>
 
-            <div class="p-6 bg-white border-t border-gray-100 mt-auto">
-                <button onclick="generateImage()" id="save-btn" class="w-full bg-red-500 text-white font-bold py-3.5 rounded-xl hover:bg-red-600 transition shadow-md flex justify-center items-center">
-                    <span class="mr-2">📸</span> 生成海报保存至相册
+                    <div class="text-center mb-6">
+                        <p id="result-desc" class="text-sm text-gray-600 leading-relaxed font-medium bg-white/60 p-3 rounded-lg"></p>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-4 border-t border-red-100">
+                        <div class="text-left">
+                            <p class="text-xs font-bold text-gray-800">测测你的“每日情绪耗电量”</p>
+                            <p class="text-[10px] text-gray-400 mt-1">搜索同名小红书获取测试指南</p>
+                        </div>
+                        <div class="w-12 h-12 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-400 overflow-hidden">
+                            <!-- 替换为你的引流二维码 -->
+                            QR
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 截图操作按钮 -->
+                <button onclick="generateImage()" id="save-btn" class="w-full bg-gray-800 text-white font-bold py-3.5 mt-4 rounded-xl hover:bg-black transition shadow-md flex justify-center items-center">
+                    <span class="mr-2">📸</span> 生成画像海报，长按保存
                 </button>
-                <p class="text-xs text-center text-gray-400 mt-3">生成图片后长按即可保存分享</p>
             </div>
+
+            <!-- 【图2】深度阅读的行动建议区 (不纳入截图传播) -->
+            <div class="p-4 pt-2">
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <h4 class="text-base font-bold text-gray-800 mb-4 flex items-center border-b border-gray-50 pb-3">
+                        <span class="mr-2">💡</span>《高性价比人生指南》行动处方
+                    </h4>
+                    <ul id="advice-list" class="space-y-4 text-sm text-gray-600 leading-relaxed"></ul>
+                </div>
+            </div>
+            
+            <div class="pb-8"></div>
         </div>
     </div>
 
@@ -122,42 +168,47 @@
         const tierData = [
             {
                 max: 9, title: "永动机体质", avatar: "🛡️",
+                desc: "全网稀缺的顶级清醒者。外界的抓马剧情根本破不了你的防，你极其擅长保护自己的注意力和精力。",
                 advice: [
-                    "<b>稳固底盘：</b>继续保持固定起床时间（周末也一样），这是你超强续航的基础。",
-                    "<b>流程防御：</b>办事就医遇到阻碍，继续把对方当按规则办事的“NPC”，依靠文书和期限推进，杜绝情绪代入。",
-                    "<b>物理急救：</b>偶尔情绪低落时性价比最高的做法：动起来、晒太阳、按时睡。"
+                    "<b>稳固底盘：</b>继续保持固定起床时间（周末也一样），这是你超强续航的基础所在。",
+                    "<b>流程防御：</b>办事就医遇到阻碍时，继续把对方当按规则办事的“NPC”，依靠文书和期限推进，杜绝情绪代入。",
+                    "<b>物理急救：</b>如果偶尔情绪低落，性价比最高的做法依旧是：动起来、晒太阳、按时睡觉。"
                 ]
             },
             {
                 max: 18, title: "薛定谔的松弛感", avatar: "🪫",
+                desc: "你平时看起来很松弛，但会在刷到别人动态或收到群消息时突然漏电。你的内耗往往被特定触发词引爆。",
                 advice: [
-                    "<b>物理隔离：</b>做深度工作时，把手机放到视线之外，切断仅需2.8秒就会让错误率翻倍的致命打断。",
-                    "<b>信息截断：</b>给刷同龄人动态的App设定硬上限，把需要看的信息改成定时集中看。",
-                    "<b>切断比较毒源：</b>习惯向上比较会让情绪变差，戒掉它，把眼睛收回自己的进度条。"
+                    "<b>物理隔离：</b>做深度工作时，把手机放到视线之外。即使你不看，手机在旁边也会让大脑认知余量变少，切断这2.8秒的致命打断。",
+                    "<b>信息截断：</b>给刷同龄人动态的App设定硬上限，把需要看的信息改成定时集中看，不要随时随地被动接收。",
+                    "<b>切断毒源：</b>向上比较会让情绪变差，立刻戒掉它，把眼睛收回自己的进度条。"
                 ]
             },
             {
                 max: 27, title: "高耗能待机", avatar: "🎭",
+                desc: "你是职场中最庞大的群体。表面稳如老狗，内心兵荒马乱。你太在意别人的看法，常常在心里演完80集连续剧。",
                 advice: [
-                    "<b>除以二法则：</b>觉得“全场都在看我出丑”时，把你估计的人数直接除以二，别在脑补中浪费电量。",
-                    "<b>清理消耗源：</b>人际交往是有账本的，一个消耗你的人造成的损失远大于支持者的补给。学会果断拒绝。",
-                    "<b>多任务幻觉：</b>不要边开会边回消息，任务一切换反应变慢且易出错，一次只做一件事。"
+                    "<b>启动除以二法则：</b>当你觉得“今天全场都在看我出丑”时，把你估计的人数直接除以二，别在脑补中浪费电量。",
+                    "<b>清理消耗源：</b>人际交往是有账本的，一个消耗你的人造成的损失远大于支持者的补给。学会果断拒绝不想接的请求。",
+                    "<b>戒除多任务幻觉：</b>不要边开会边回消息，任务一切换反应变慢且易出错，强制自己一次只做一件事。"
                 ]
             },
             {
                 max: 36, title: "沉没成本囚徒", avatar: "⛓️",
+                desc: "你每天的电量在中午就耗尽了。你被一段糟糕的关系或烂尾项目死死拖住，想放弃又舍不得以前的付出。",
                 advice: [
-                    "<b>强制斩断反刍：</b>发现自己在反复回想糟心事，立刻去干一件需要动手的事（如洗碗），想是想不通的。",
-                    "<b>无视沉没成本：</b>决定是否继续死磕时，只算未来投入和回报，已经花掉的全部当成0。",
-                    "<b>人造死线：</b>没有截止日期的事情，自己硬定一个日期并认账，不要等心情好了再做。"
+                    "<b>强制斩断反刍：</b>发现自己在反复回想糟心事时，立刻去干一件需要动手的事（如洗碗打扫），想是想不通的。",
+                    "<b>无视沉没成本：</b>决定是否继续死磕时，只算未来投入和回报，已经花掉的钱和时间全部当成0。",
+                    "<b>人造死线：</b>没有外部截止日期的事情，自己硬定一个日期并认账，绝不等心情好了再做。"
                 ]
             },
             {
                 max: 45, title: "系统崩盘边缘", avatar: "🚨",
+                desc: "警告！你已处于重度透支状态。你每天70%的能量都耗在自我攻击上，极易用熬夜或暴饮暴食来报复性发泄。",
                 advice: [
-                    "<b>23:00强制熔断：</b>深夜绝对不做重大决定、不发要紧消息，人在缺觉时极易选择高风险错误选项。",
-                    "<b>悲观当感冒治：</b>脑子里冒出“完蛋了”的念头时，把它当成躯体症状看，绝不要当成事实预测。",
-                    "<b>降火别靠砸：</b>生气时别靠砸东西发泄，那只会让身体兴奋；用深呼吸等方式让身体慢下来才能真正消气。"
+                    "<b>23:00强制熔断：</b>深夜绝对不做重大决定、不发要紧消息，人在缺觉时极易选择高风险的错误选项。",
+                    "<b>悲观当感冒治：</b>脑子里冒出“完蛋了”的念头时，把它当成躯体生病的症状看，绝不要当成对未来的准确预测。",
+                    "<b>降火别靠砸：</b>生气时别靠砸东西发泄，那只会让身体更加兴奋；用深呼吸等方式让身体慢下来才能真正消气。"
                 ]
             }
         ];
@@ -179,6 +230,7 @@
             btn.innerHTML = '验证中...';
             btn.disabled = true;
             
+            // 演示前端直接验证，实际使用请请求您的云函数 API
             const validCodes = ['VIP888', 'XHS2026', 'TEST001'];
             
             setTimeout(() => {
@@ -198,16 +250,13 @@
         function showQuestion() {
             const qData = questions[currentQ];
             
-            // 更新进度数字及宽度
             document.getElementById('progress-text').innerText = currentQ + 1;
             document.getElementById('progress-bar').style.width = ((currentQ + 1) / 15 * 100) + "%";
             
-            // 动态切换维度颜色
             const dimTitle = document.getElementById('dimension-title');
             const progText = document.getElementById('progress-text');
             const progBar = document.getElementById('progress-bar');
             
-            // 每次切换先清空之前注入的颜色相关类
             dimTitle.className = "text-xs font-bold px-2 py-1 rounded";
             progText.className = "text-lg font-bold";
             progBar.className = "h-2 rounded-full transition-all duration-300";
@@ -215,17 +264,11 @@
             let themeText, themeBg, themeBar;
             
             if (qData.d.includes("维度一")) {
-                themeText = "text-blue-500";
-                themeBg = "bg-blue-50";
-                themeBar = "bg-blue-400";
+                themeText = "text-blue-500"; themeBg = "bg-blue-50"; themeBar = "bg-blue-400";
             } else if (qData.d.includes("维度二")) {
-                themeText = "text-purple-500";
-                themeBg = "bg-purple-50";
-                themeBar = "bg-purple-400";
+                themeText = "text-purple-500"; themeBg = "bg-purple-50"; themeBar = "bg-purple-400";
             } else {
-                themeText = "text-red-500";
-                themeBg = "bg-red-50";
-                themeBar = "bg-red-400";
+                themeText = "text-red-500"; themeBg = "bg-red-50"; themeBar = "bg-red-400";
             }
 
             dimTitle.classList.add(themeText, themeBg);
@@ -275,6 +318,7 @@
             
             document.getElementById('result-title').innerText = matchedTier.title;
             document.getElementById('result-avatar').innerText = matchedTier.avatar;
+            document.getElementById('result-desc').innerText = matchedTier.desc;
             
             const adviceList = document.getElementById('advice-list');
             adviceList.innerHTML = '';
@@ -288,7 +332,8 @@
 
         function generateImage() {
             const btn = document.getElementById('save-btn');
-            btn.innerHTML = '<span class="mr-2">⌛</span> 正在生成专属海报...';
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="mr-2">⌛</span> 正在生成画像海报...';
             btn.disabled = true;
 
             const captureArea = document.getElementById('capture-area');
@@ -299,10 +344,16 @@
                 backgroundColor: "#ffffff"
             }).then(canvas => {
                 const imgData = canvas.toDataURL('image/png');
-                captureArea.innerHTML = `<img src="${imgData}" class="w-full h-auto rounded-xl shadow-md" alt="你的测试海报">`;
-                btn.innerHTML = '<span class="mr-2">✅</span> 长按上方海报保存';
+                captureArea.innerHTML = `<img src="${imgData}" class="w-full h-auto rounded-2xl shadow-md" alt="你的测试海报">`;
+                btn.innerHTML = '<span class="mr-2">✅</span> 海报已生成，请长按上方图片保存';
+            }).catch(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                alert("生成失败，请稍后重试");
             });
         }
     </script>
 </body>
 </html>
+
+```
