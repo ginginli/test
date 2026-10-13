@@ -1,29 +1,11 @@
-目前的建议是完全按照《高性价比人生指南》中具有明确实验数据支撑（A/B级证据）的条款提炼而来的。为了适配小红书的传播语境，我在文案上做了“网感化”包装，但**核心操作指令100%忠于原书**。
+这个产品直觉非常敏锐！把“用户自己选的重度内耗场景”直接列出来，然后再给处方，能极大地增强报告的“专属感”和“刺痛感”。用户看到自己刚选的答案被原封不动地摆在面前，接着直接给出一针见血的破解动作，这种交付的体验会极其震撼。
 
-以下是测试结果处方与原书的对应关系：
+为了实现这个效果，我重新优化了结果页的排版和底层 JS 逻辑：
 
-* **物理隔离/切断打断**：对应第3节第1条（工作时手机放到视线外）和第7条（一次只做一件事，不边开会边回消息）。
+1. **记录完整答题轨迹**：现在代码不仅记录得分，还会把用户在每道题看到的“题目”和选中的“选项文本”都存下来。
+2. **重构专属建议区（图2）**：将原来的简单列表，升级为“【你的内耗重灾区】与【对症处方】”的成对结构。直接向用户展示：“因为你在场景X中选择了Y，所以你需要执行动作Z。”
 
-
-* **除以二法则**：对应第3节第21条（觉得所有人看见自己出丑时，把估计的人数除以二）。
-
-
-* **强制斩断反刍**：对应第3节第14条（反复回想糟心事时，换个需要动手的活）。
-
-
-* **无视沉没成本与人造死线**：对应第4节第3条（决定是否继续时只看未来投入与回报）和第8条（给没有外部截止的事自己定一个日期）。
-
-
-* **23:00强制熔断与降火别靠砸**：对应第3节第10条（深夜不做重大决定）和第23条（生气别靠砸东西发泄，靠让身体慢下来）。
-
-
-
-针对您的页面优化需求，我已经对代码进行了全面升级：
-
-1. **激活页面正名**：在输入激活码的醒目位置，以专属Badge（徽章）的形式标明了“基于《高性价比人生指南》硬核数据研发”。
-2. **结果页双轨拆分**：将结果页拆分为两块。第一部分是**纯净的“画像海报”**（包含分数、网感标签、头像和您的引流二维码），专供用户一键生成图片发朋友圈或小红书；第二部分是**独立的“操作建议报告”**，放在海报下方供用户深度阅读，不干扰截图传播的视觉焦点。
-
-以下是更新后的完整代码：
+以下是为您全面优化后的最新 H5 代码：
 
 ```html
 <!DOCTYPE html>
@@ -38,7 +20,6 @@
         .hidden { display: none; }
         .poster-bg { background: linear-gradient(135deg, #fffcfc 0%, #fff1f1 100%); }
         .capture-container { width: 100%; max-width: 400px; margin: 0 auto; }
-        /* 隐藏滚动条但允许滚动 */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
@@ -52,7 +33,6 @@
             <div class="text-center mb-8">
                 <div class="text-5xl mb-4">🔋</div>
                 <h1 class="text-2xl font-bold text-gray-800 mb-3">隐性内耗指数自测</h1>
-                <!-- 标明出处 -->
                 <div class="inline-block bg-red-50 border border-red-100 rounded-full px-3 py-1 mb-4">
                     <p class="text-xs text-red-500 font-bold tracking-widest">基于《高性价比人生指南》研发</p>
                 </div>
@@ -85,13 +65,13 @@
         <div id="loading-screen" class="hidden p-8 flex flex-col justify-center items-center h-full flex-1 bg-white">
             <div class="animate-spin text-5xl mb-4">⚙️</div>
             <h2 class="text-xl font-bold text-gray-700">正在生成诊断报告...</h2>
-            <p class="text-sm text-gray-400 mt-2">交叉比对指南数据库中</p>
+            <p class="text-sm text-gray-400 mt-2">分析你的内耗重灾区...</p>
         </div>
 
-        <!-- 4. 结果展示区 (拆分为可截图海报 + 操作建议) -->
+        <!-- 4. 结果展示区 -->
         <div id="result-screen" class="hidden flex-col h-full bg-gray-100 overflow-y-auto no-scrollbar">
             
-            <!-- 【图1】专供截图传播的画像海报区 -->
+            <!-- 【图1】海报区 (仅含分数与画像评价) -->
             <div class="p-4 pb-2">
                 <div id="capture-area" class="capture-container poster-bg p-6 rounded-2xl shadow-sm relative overflow-hidden border border-red-50">
                     <div class="text-center border-b border-red-100 pb-4 mb-6">
@@ -109,112 +89,88 @@
                     </div>
 
                     <div class="text-center mb-6">
-                        <p id="result-desc" class="text-sm text-gray-600 leading-relaxed font-medium bg-white/60 p-3 rounded-lg"></p>
+                        <p id="result-desc" class="text-sm text-gray-600 leading-relaxed font-medium bg-white/60 p-4 rounded-lg text-left"></p>
                     </div>
 
                     <div class="flex items-center justify-between pt-4 border-t border-red-100">
                         <div class="text-left">
-                            <p class="text-xs font-bold text-gray-800">测测你的“每日情绪耗电量”</p>
+                            <p class="text-xs font-bold text-gray-800">长按保存你的专属诊断卡</p>
                             <p class="text-[10px] text-gray-400 mt-1">搜索同名小红书获取测试指南</p>
                         </div>
                         <div class="w-12 h-12 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-400 overflow-hidden">
-                            <!-- 替换为你的引流二维码 -->
-                            QR
+                            QR码
                         </div>
                     </div>
                 </div>
 
-                <!-- 截图操作按钮 -->
                 <button onclick="generateImage()" id="save-btn" class="w-full bg-gray-800 text-white font-bold py-3.5 mt-4 rounded-xl hover:bg-black transition shadow-md flex justify-center items-center">
                     <span class="mr-2">📸</span> 生成画像海报，长按保存
                 </button>
             </div>
 
-            <!-- 【图2】深度阅读的行动建议区 (不纳入截图传播) -->
+            <!-- 【图2】深度阅读区：重灾区与专属建议 -->
             <div class="p-4 pt-2">
                 <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                    <h4 class="text-base font-bold text-gray-800 mb-4 flex items-center border-b border-gray-50 pb-3">
-                        <span class="mr-2">💡</span>《高性价比人生指南》行动处方
+                    <h4 class="text-base font-bold text-gray-800 mb-5 flex items-center border-b border-gray-50 pb-3">
+                        <span class="mr-2">🔍</span>你的内耗重灾区与对症处方
                     </h4>
-                    <ul id="advice-list" class="space-y-4 text-sm text-gray-600 leading-relaxed"></ul>
+                    
+                    <!-- 动态插入痛点与处方的容器 -->
+                    <div id="dynamic-advice-container" class="space-y-4"></div>
+                    
                 </div>
             </div>
-            
             <div class="pb-8"></div>
         </div>
     </div>
 
     <script>
         const questions = [
-            { d: "维度一：情绪与人际高敏区", q: "Q1：开会或聚餐时说错了一句话，当天晚上你的状态是？", opts: [{t: "A. 经常中枪，反复回想", s: 3}, {t: "B. 偶尔这样，睡一觉就好", s: 1}, {t: "C. 几乎不想，说过就忘", s: 0}] },
-            { d: "维度一：情绪与人际高敏区", q: "Q2：当你的工作/生活做不到100分时，你是否觉得“别人一定会彻底否定我”？", opts: [{t: "A. 经常这么觉得", s: 3}, {t: "B. 偶尔有这种压力", s: 1}, {t: "C. 尽力就好，不强求完美", s: 0}] },
-            { d: "维度一：情绪与人际高敏区", q: "Q3：当你看到朋友圈或小红书上，同龄人又升职加薪或到处旅行时，你会？", opts: [{t: "A. 极度焦虑，觉得自己很失败", s: 3}, {t: "B. 羡慕，但过会儿就忘了", s: 1}, {t: "C. 很少比较，或直接给这类App设限", s: 0}] },
-            { d: "维度一：情绪与人际高敏区", q: "Q4：面对一个总是抱怨、疯狂消耗你的朋友或同事，你通常的反应是？", opts: [{t: "A. 不好意思拒绝，一直忍受", s: 3}, {t: "B. 偶尔附和几句", s: 1}, {t: "C. 果断拒绝，远离消耗型关系", s: 0}] },
-            { d: "维度一：情绪与人际高敏区", q: "Q5：去办事或就医时遇到工作人员态度不好、流程繁琐，你通常会？", opts: [{t: "A. 非常生气，觉得针对自己，反复复述委屈", s: 3}, {t: "B. 当场生气，但办完就算了", s: 1}, {t: "C. 只关注拿回执记期限，把对方当按规则办事的NPC", s: 0}] },
+            { d: "维度一：情绪与人际高敏区", q: "Q1：开会或聚餐时说错了一句话，当天晚上你的状态是？", opts: [{t: "A. 经常中枪，反复回想", s: 3}, {t: "B. 偶尔这样，睡一觉就好", s: 1}, {t: "C. 几乎不想，说过就忘", s: 0}],
+              advice: "<b>启动“除以二”法则：</b>觉得“全场都在看我出丑”时，把你估计的人数直接除以二。别人真没那么关注你，别在脑补中浪费电量。" },
+            { d: "维度一：情绪与人际高敏区", q: "Q2：当你的工作/生活做不到100分时，你是否觉得“别人一定会彻底否定我”？", opts: [{t: "A. 经常这么觉得", s: 3}, {t: "B. 偶尔有这种压力", s: 1}, {t: "C. 尽力就好，不强求完美", s: 0}],
+              advice: "<b>切断完美主义执念：</b>把“别人要求我做到完美”当成躯体生病的症状看，绝不要当成必然发生的现实去恐惧。" },
+            { d: "维度一：情绪与人际高敏区", q: "Q3：当你看到朋友圈或小红书上，同龄人又升职加薪或到处旅行时，你会？", opts: [{t: "A. 极度焦虑，觉得自己很失败", s: 3}, {t: "B. 羡慕，但过会儿就忘了", s: 1}, {t: "C. 很少比较，或直接给这类App设限", s: 0}],
+              advice: "<b>切断比较毒源：</b>习惯向上比较会让情绪变差，立刻给刷同龄人动态的App设定硬上限，把眼睛收回自己的进度条。" },
+            { d: "维度一：情绪与人际高敏区", q: "Q4：面对一个总是抱怨、疯狂消耗你的朋友或同事，你通常的反应是？", opts: [{t: "A. 不好意思拒绝，一直忍受", s: 3}, {t: "B. 偶尔附和几句", s: 1}, {t: "C. 果断拒绝，远离消耗型关系", s: 0}],
+              advice: "<b>清理消耗源：</b>人际交往是有账本的，一个消耗你的人造成的损失远大于支持者的补给。学会果断拒绝不想接的请求。" },
+            { d: "维度一：情绪与人际高敏区", q: "Q5：去办事或就医时遇到工作人员态度不好、流程繁琐，你通常会？", opts: [{t: "A. 非常生气，觉得针对自己，反复复述委屈", s: 3}, {t: "B. 当场生气，但办完就算了", s: 1}, {t: "C. 只关注拿回执记期限，把对方当NPC", s: 0}],
+              advice: "<b>启动流程防御：</b>去办事遇到阻碍，把对方当成受规则约束的“NPC”，只靠文书和期限推进，杜绝情绪代入。" },
             
-            { d: "维度二：行动与认知瘫痪区", q: "Q6：遇到一件极其糟心、想不通的事情时，你会怎么做？", opts: [{t: "A. 停在原地反复琢磨", s: 3}, {t: "B. 找人疯狂吐槽", s: 1}, {t: "C. 立刻去干点需要动手的活", s: 0}] },
-            { d: "维度二：行动与认知瘫痪区", q: "Q7：当一个项目或者一段关系已经让你痛苦且没有希望，但你已经投入了三年，你会？", opts: [{t: "A. 觉得沉没成本太高，继续耗着", s: 3}, {t: "B. 纠结犹豫，走一步看一步", s: 1}, {t: "C. 只看未来投入和回报，果断止损", s: 0}] },
-            { d: "维度二：行动与认知瘫痪区", q: "Q8：当事情发展不如预期，脑子里冒出“完蛋了，全毁了”这种悲观念头时，你觉得？", opts: [{t: "A. 觉得这是对未来的精准预测", s: 3}, {t: "B. 害怕，努力往好处想", s: 1}, {t: "C. 知道这是一种情绪症状，不当成事实", s: 0}] },
-            { d: "维度二：行动与认知瘫痪区", q: "Q9：当一件事情没有明确的外部截止日期（比如学个技能）时，你通常会？", opts: [{t: "A. 永远挂在脑子里，一直不动手", s: 3}, {t: "B. 等心情好了再做", s: 1}, {t: "C. 自己给它定一个死期限并认账", s: 0}] },
-            { d: "维度二：行动与认知瘫痪区", q: "Q10：在做需要连贯思考的工作时，突然收到一条不太紧急的微信，你会？", opts: [{t: "A. 立刻停下来回复", s: 3}, {t: "B. 看一眼，等手头事结束再回", s: 1}, {t: "C. 专注当前，按设定的固定时间批处理", s: 0}] },
+            { d: "维度二：行动与认知瘫痪区", q: "Q6：遇到一件极其糟心、想不通的事情时，你会怎么做？", opts: [{t: "A. 停在原地反复琢磨", s: 3}, {t: "B. 找人疯狂吐槽", s: 1}, {t: "C. 立刻去干点需要动手的活", s: 0}],
+              advice: "<b>强制斩断反刍：</b>发现自己在反复回想糟心事时，立刻去干一件需要动手的事（如洗碗打扫），死想是想不通的。" },
+            { d: "维度二：行动与认知瘫痪区", q: "Q7：当一个项目或者一段关系已经让你痛苦且没有希望，但你已经投入了三年，你会？", opts: [{t: "A. 觉得沉没成本太高，继续耗着", s: 3}, {t: "B. 纠结犹豫，走一步看一步", s: 1}, {t: "C. 只看未来投入和回报，果断止损", s: 0}],
+              advice: "<b>无视沉没成本：</b>决定是否继续死磕时，只算未来投入和回报，已经花掉的钱和时间全部当成0。" },
+            { d: "维度二：行动与认知瘫痪区", q: "Q8：当事情发展不如预期，脑子里冒出“完蛋了，全毁了”这种悲观念头时，你觉得？", opts: [{t: "A. 觉得这是对未来的精准预测", s: 3}, {t: "B. 害怕，努力往好处想", s: 1}, {t: "C. 知道这是一种情绪症状，不当成事实", s: 0}],
+              advice: "<b>阻断灾难化思维：</b>脑子里冒出“事情肯定会更糟”的念头时，把它当成症状，而不是对未来的准确预判。" },
+            { d: "维度二：行动与认知瘫痪区", q: "Q9：当一件事情没有明确的外部截止日期（比如学个技能）时，你通常会？", opts: [{t: "A. 永远挂在脑子里，一直不动手", s: 3}, {t: "B. 等心情好了再做", s: 1}, {t: "C. 自己给它定一个死期限并认账", s: 0}],
+              advice: "<b>人造死线：</b>没有外部截止日期的事情，自己硬定一个日期并认账，绝不等心情好了再做。" },
+            { d: "维度二：行动与认知瘫痪区", q: "Q10：在做需要连贯思考的工作时，突然收到一条不太紧急的微信，你会？", opts: [{t: "A. 立刻停下来回复", s: 3}, {t: "B. 看一眼，等手头事结束再回", s: 1}, {t: "C. 专注当前，按设定的固定时间批处理", s: 0}],
+              advice: "<b>戒除多任务幻觉：</b>任务一切换，反应变慢且易出错，强制自己一次只做一件事，不要随时秒回。" },
             
-            { d: "维度三：生理与物理漏电区", q: "Q11：白天受了委屈或感到极度愤怒时，你会选择以下哪种发泄方式？", opts: [{t: "A. 摔东西、疯狂跑步等让身体兴奋的方式", s: 3}, {t: "B. 暴饮暴食", s: 1}, {t: "C. 深呼吸、静坐等让身体慢下来的方式", s: 0}] },
-            { d: "维度三：生理与物理漏电区", q: "Q12：工作日遇到重大挫折，到了深夜12点，你会？", opts: [{t: "A. 熬夜做重大决定或发要紧消息", s: 3}, {t: "B. 刷短视频逃避", s: 1}, {t: "C. 强迫自己睡觉，推到醒来再说", s: 0}] },
-            { d: "维度三：生理与物理漏电区", q: "Q13：在做需要深度思考的工作时，你的手机通常在哪？", opts: [{t: "A. 随时放在手边，来消息就看", s: 3}, {t: "B. 放手边但开静音", s: 1}, {t: "C. 放到视线之外，关掉非必要通知", s: 0}] },
-            { d: "维度三：生理与物理漏电区", q: "Q14：睡前躺在床上，你通常会做什么？", opts: [{t: "A. 关灯后继续刷短视频越刷越精神", s: 3}, {t: "B. 看会儿电子书困了睡", s: 1}, {t: "C. 睡前一小时不看发光屏幕", s: 0}] },
-            { d: "维度三：生理与物理漏电区", q: "Q15：面对海量的群消息、短视频推送，你的习惯是？", opts: [{t: "A. 一响秒回，不断刷新生怕错过", s: 3}, {t: "B. 偶尔集中清理，但常点开推送", s: 1}, {t: "C. 屏蔽非必要通知，给App设硬上限", s: 0}] }
+            { d: "维度三：生理与物理漏电区", q: "Q11：白天受了委屈或感到极度愤怒时，你会选择以下哪种发泄方式？", opts: [{t: "A. 摔东西、疯狂跑步等让身体兴奋的方式", s: 3}, {t: "B. 暴饮暴食", s: 1}, {t: "C. 深呼吸、静坐等让身体慢下来的方式", s: 0}],
+              advice: "<b>降火别靠砸：</b>生气时别靠砸东西发泄，那只会让身体更加兴奋；用深呼吸等方式让身体慢下来才能真正消气。" },
+            { d: "维度三：生理与物理漏电区", q: "Q12：工作日遇到重大挫折，到了深夜12点，你会？", opts: [{t: "A. 熬夜做重大决定或发要紧消息", s: 3}, {t: "B. 刷短视频逃避", s: 1}, {t: "C. 强迫自己睡觉，推到醒来再说", s: 0}],
+              advice: "<b>23:00强制熔断：</b>深夜绝对不做重大决定、不发要紧消息，人在缺觉时极易选择高风险的错误选项。" },
+            { d: "维度三：生理与物理漏电区", q: "Q13：在做需要深度思考的工作时，你的手机通常在哪？", opts: [{t: "A. 随时放在手边，来消息就看", s: 3}, {t: "B. 放手边但开静音", s: 1}, {t: "C. 放到视线之外，关掉非必要通知", s: 0}],
+              advice: "<b>物理隔离：</b>做深度工作时，把手机放到视线之外。即使不看，手机在旁边也会让大脑认知余量变少。" },
+            { d: "维度三：生理与物理漏电区", q: "Q14：睡前躺在床上，你通常会做什么？", opts: [{t: "A. 关灯后继续刷短视频越刷越精神", s: 3}, {t: "B. 看会儿电子书困了睡", s: 1}, {t: "C. 睡前一小时不看发光屏幕", s: 0}],
+              advice: "<b>睡前屏幕剥夺：</b>睡前发光屏幕会压低褪黑素，导致第二天生物钟推迟。坚持睡前一小时不看发光屏幕。" },
+            { d: "维度三：生理与物理漏电区", q: "Q15：面对海量的群消息、短视频推送，你的习惯是？", opts: [{t: "A. 一响秒回，不断刷新生怕错过", s: 3}, {t: "B. 偶尔集中清理，但常点开推送", s: 1}, {t: "C. 屏蔽非必要通知，给App设硬上限", s: 0}],
+              advice: "<b>信息截断：</b>把需要看的信息改成定时集中看。砍掉随时的信息输入，省下来的时间一分不打折。" }
         ];
 
         const tierData = [
-            {
-                max: 9, title: "永动机体质", avatar: "🛡️",
-                desc: "全网稀缺的顶级清醒者。外界的抓马剧情根本破不了你的防，你极其擅长保护自己的注意力和精力。",
-                advice: [
-                    "<b>稳固底盘：</b>继续保持固定起床时间（周末也一样），这是你超强续航的基础所在。",
-                    "<b>流程防御：</b>办事就医遇到阻碍时，继续把对方当按规则办事的“NPC”，依靠文书和期限推进，杜绝情绪代入。",
-                    "<b>物理急救：</b>如果偶尔情绪低落，性价比最高的做法依旧是：动起来、晒太阳、按时睡觉。"
-                ]
-            },
-            {
-                max: 18, title: "薛定谔的松弛感", avatar: "🪫",
-                desc: "你平时看起来很松弛，但会在刷到别人动态或收到群消息时突然漏电。你的内耗往往被特定触发词引爆。",
-                advice: [
-                    "<b>物理隔离：</b>做深度工作时，把手机放到视线之外。即使你不看，手机在旁边也会让大脑认知余量变少，切断这2.8秒的致命打断。",
-                    "<b>信息截断：</b>给刷同龄人动态的App设定硬上限，把需要看的信息改成定时集中看，不要随时随地被动接收。",
-                    "<b>切断毒源：</b>向上比较会让情绪变差，立刻戒掉它，把眼睛收回自己的进度条。"
-                ]
-            },
-            {
-                max: 27, title: "高耗能待机", avatar: "🎭",
-                desc: "你是职场中最庞大的群体。表面稳如老狗，内心兵荒马乱。你太在意别人的看法，常常在心里演完80集连续剧。",
-                advice: [
-                    "<b>启动除以二法则：</b>当你觉得“今天全场都在看我出丑”时，把你估计的人数直接除以二，别在脑补中浪费电量。",
-                    "<b>清理消耗源：</b>人际交往是有账本的，一个消耗你的人造成的损失远大于支持者的补给。学会果断拒绝不想接的请求。",
-                    "<b>戒除多任务幻觉：</b>不要边开会边回消息，任务一切换反应变慢且易出错，强制自己一次只做一件事。"
-                ]
-            },
-            {
-                max: 36, title: "沉没成本囚徒", avatar: "⛓️",
-                desc: "你每天的电量在中午就耗尽了。你被一段糟糕的关系或烂尾项目死死拖住，想放弃又舍不得以前的付出。",
-                advice: [
-                    "<b>强制斩断反刍：</b>发现自己在反复回想糟心事时，立刻去干一件需要动手的事（如洗碗打扫），想是想不通的。",
-                    "<b>无视沉没成本：</b>决定是否继续死磕时，只算未来投入和回报，已经花掉的钱和时间全部当成0。",
-                    "<b>人造死线：</b>没有外部截止日期的事情，自己硬定一个日期并认账，绝不等心情好了再做。"
-                ]
-            },
-            {
-                max: 45, title: "系统崩盘边缘", avatar: "🚨",
-                desc: "警告！你已处于重度透支状态。你每天70%的能量都耗在自我攻击上，极易用熬夜或暴饮暴食来报复性发泄。",
-                advice: [
-                    "<b>23:00强制熔断：</b>深夜绝对不做重大决定、不发要紧消息，人在缺觉时极易选择高风险的错误选项。",
-                    "<b>悲观当感冒治：</b>脑子里冒出“完蛋了”的念头时，把它当成躯体生病的症状看，绝不要当成对未来的准确预测。",
-                    "<b>降火别靠砸：</b>生气时别靠砸东西发泄，那只会让身体更加兴奋；用深呼吸等方式让身体慢下来才能真正消气。"
-                ]
-            }
+            { max: 9, title: "永动机体质", avatar: "🛡️", desc: "全网稀缺的顶级清醒者。外界的抓马剧情根本破不了你的防，你极其擅长保护自己的注意力和精力。" },
+            { max: 18, title: "薛定谔的松弛感", avatar: "🪫", desc: "你平时看起来很松弛，但会在特定场景突然漏电。你的内耗往往被特定的痛点触发词引爆。" },
+            { max: 27, title: "高耗能待机", avatar: "🎭", desc: "职场中最庞大的群体。表面稳如老狗，内心兵荒马乱。经常因为别人的一句话在心里演完80集连续剧。" },
+            { max: 36, title: "沉没成本囚徒", avatar: "⛓️", desc: "你每天的电量在中午就耗尽了。容易被糟糕的关系或烂尾项目拖住，想放弃又舍不得以前的付出。" },
+            { max: 45, title: "系统崩盘边缘", avatar: "🚨", desc: "警告！你已处于重度透支状态。每天大量的能量都耗在自我攻击上，极易用熬夜或暴饮暴食来报复性发泄。" }
         ];
 
         let currentQ = 0;
         let totalScore = 0;
+        let userAnswers = []; // 保存用户的答题详情
 
         function verifyCode() {
             const btn = document.getElementById('verify-btn');
@@ -230,9 +186,7 @@
             btn.innerHTML = '验证中...';
             btn.disabled = true;
             
-            // 演示前端直接验证，实际使用请请求您的云函数 API
             const validCodes = ['VIP888', 'XHS2026', 'TEST001'];
-            
             setTimeout(() => {
                 if(validCodes.includes(codeInput)) {
                     document.getElementById('auth-screen').classList.add('hidden');
@@ -249,7 +203,6 @@
 
         function showQuestion() {
             const qData = questions[currentQ];
-            
             document.getElementById('progress-text').innerText = currentQ + 1;
             document.getElementById('progress-bar').style.width = ((currentQ + 1) / 15 * 100) + "%";
             
@@ -262,7 +215,6 @@
             progBar.className = "h-2 rounded-full transition-all duration-300";
 
             let themeText, themeBg, themeBar;
-            
             if (qData.d.includes("维度一")) {
                 themeText = "text-blue-500"; themeBg = "bg-blue-50"; themeBar = "bg-blue-400";
             } else if (qData.d.includes("维度二")) {
@@ -284,13 +236,16 @@
                 const btn = document.createElement('button');
                 btn.className = "w-full text-left bg-gray-50 border border-gray-200 p-4 rounded-xl hover:bg-gray-100 hover:border-gray-300 transition shadow-sm text-sm font-medium focus:bg-gray-200";
                 btn.innerText = opt.t;
-                btn.onclick = () => answer(opt.s);
+                // 传参新增题目和选项文本
+                btn.onclick = () => answer(opt.s, qData.advice, qData.q, opt.t);
                 optsDiv.appendChild(btn);
             });
         }
 
-        function answer(score) {
+        function answer(score, adviceText, qText, optText) {
             totalScore += score;
+            // 将详细信息存入数组
+            userAnswers.push({ score: score, advice: adviceText, question: qText, option: optText });
             currentQ++;
             if (currentQ < questions.length) {
                 showQuestion();
@@ -313,20 +268,50 @@
 
         function renderResult() {
             document.getElementById('score').innerText = totalScore;
-            
             let matchedTier = tierData.find(t => totalScore <= t.max);
-            
             document.getElementById('result-title').innerText = matchedTier.title;
             document.getElementById('result-avatar').innerText = matchedTier.avatar;
             document.getElementById('result-desc').innerText = matchedTier.desc;
             
-            const adviceList = document.getElementById('advice-list');
-            adviceList.innerHTML = '';
-            matchedTier.advice.forEach(adv => {
-                const li = document.createElement('li');
-                li.className = "flex items-start";
-                li.innerHTML = `<span class="text-red-400 mr-2 mt-0.5">·</span><span>${adv}</span>`;
-                adviceList.appendChild(li);
+            // 挑出最严重的痛点 (选A得3分的题)
+            let worstHabits = userAnswers.filter(a => a.score === 3);
+            if (worstHabits.length < 3) {
+                let mediumHabits = userAnswers.filter(a => a.score === 1);
+                worstHabits = worstHabits.concat(mediumHabits);
+            }
+            // 截取前3个痛点
+            let top3 = worstHabits.slice(0, 3);
+            
+            // 处理完美分数的兜底逻辑
+            if (top3.length === 0) {
+                top3 = [
+                    { question: "日常状态维护", option: "各方面处理得都很好", advice: "<b>稳固底盘：</b>继续保持固定起床时间（周末也一样），这是你超强续航的基础。" },
+                    { question: "情绪急救备用", option: "暂无情绪危机", advice: "<b>物理急救：</b>偶尔情绪低落时性价比最高的做法依旧是：动起来、晒太阳、按时睡觉。" }
+                ];
+            }
+
+            const adviceContainer = document.getElementById('dynamic-advice-container');
+            adviceContainer.innerHTML = '';
+            
+            top3.forEach((item, index) => {
+                // 去掉题目前缀的 "Qx：" 使展示更美观
+                let cleanQ = item.question.replace(/^Q\d+：/, '');
+                
+                let block = document.createElement('div');
+                block.className = "bg-gray-50 p-4 rounded-xl border border-gray-200";
+                block.innerHTML = `
+                    <div class="mb-3">
+                        <span class="text-xs font-bold text-white bg-gray-800 px-2 py-1 rounded mr-2 align-middle">痛点 ${index + 1}</span>
+                        <span class="text-sm font-bold text-gray-800 align-middle">${cleanQ}</span>
+                    </div>
+                    <div class="text-xs text-gray-500 mb-4 flex items-center bg-white p-2 rounded border border-gray-100">
+                        <span class="mr-2">👉</span> 你的选择：${item.option}
+                    </div>
+                    <div class="text-sm text-gray-700 leading-relaxed border-t border-gray-200 pt-3">
+                        <span class="text-red-500 font-bold mr-1">💊 专属处方：</span>${item.advice}
+                    </div>
+                `;
+                adviceContainer.appendChild(block);
             });
         }
 
