@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>隐性内耗与情绪耗电量自测</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .hidden { display: none; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans antialiased min-h-screen flex items-center justify-center p-4">
+    <div id="app" class="max-w-md w-full bg-white rounded-xl shadow-lg p-6">
+        
+        <!-- 封面区 -->
+        <div id="start-screen" class="text-center">
+            <h1 class="text-2xl font-bold text-red-500 mb-2">隐性内耗指数自测</h1>
+            <p class="text-gray-500 text-sm mb-6">高维生存指南 ｜ 测测你的“每日情绪耗电量”</p>
+            <div class="bg-red-50 rounded-lg p-4 mb-6">
+                <p class="text-sm text-red-600">真正掏空你的不是工作量，而是你脑子里永不停歇的“后台程序”。</p>
+            </div>
+            <button onclick="startTest()" class="w-full bg-red-500 text-white font-bold py-3 rounded-lg hover:bg-red-600 transition shadow-md">
+                开始测试 (共10题)
+            </button>
+        </div>
+
+        <!-- 答题区 -->
+        <div id="question-screen" class="hidden">
+            <div class="mb-4 text-sm text-gray-400 font-medium">进度: <span id="progress" class="text-red-500">1</span>/10</div>
+            <h2 id="question-text" class="text-lg font-bold mb-6 leading-relaxed"></h2>
+            <div id="options" class="space-y-3"></div>
+        </div>
+
+        <!-- 结果与转化区 -->
+        <div id="result-screen" class="hidden text-center">
+            <h2 class="text-xl font-bold mb-2">你的内耗指数：<span id="score" class="text-red-500 text-4xl mx-1"></span> 分</h2>
+            <h3 id="result-title" class="text-lg font-bold text-gray-800 mb-4 mt-2"></h3>
+            <p id="result-desc" class="text-sm text-gray-600 mb-8 bg-gray-50 p-4 rounded text-left leading-relaxed border border-gray-100"></p>
+            
+            <!-- 变现转化按钮，可跳转到知识星球、微信客服页或支付页 -->
+            <a href="#" class="block w-full bg-red-500 text-white font-bold py-3 rounded-lg hover:bg-red-600 transition mb-3 shadow-md">
+                解锁《高性价比回血白皮书》
+            </a>
+            <p class="text-xs text-gray-400">点击获取完整的反内耗行动核对清单</p>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            { q: "Q1：开会或聚餐时说错了一句话，当天晚上你的状态是？", opts: [{t: "A. 经常中枪，反复回想", s: 3}, {t: "B. 偶尔这样，睡一觉就好", s: 1}, {t: "C. 几乎不想，说过就忘", s: 0}] },
+            { q: "Q2：遇到一件极其糟心、想不通的事情时，你会怎么做？", opts: [{t: "A. 停在原地反复琢磨", s: 3}, {t: "B. 找人疯狂吐槽", s: 1}, {t: "C. 立刻去干点需要动手的活", s: 0}] },
+            { q: "Q3：当你的工作/生活做不到100分时，你是否觉得“别人一定会彻底否定我”？", opts: [{t: "A. 经常这么觉得", s: 3}, {t: "B. 偶尔有这种压力", s: 1}, {t: "C. 尽力就好，不强求完美", s: 0}] },
+            { q: "Q4：白天受了委屈或感到极度愤怒时，你会选择以下哪种发泄方式？", opts: [{t: "A. 摔东西、疯狂跑步等让身体兴奋的方式", s: 3}, {t: "B. 暴饮暴食", s: 1}, {t: "C. 深呼吸、静坐等让身体慢下来的方式", s: 0}] },
+            { q: "Q5：工作日遇到重大挫折，到了深夜12点，你会？", opts: [{t: "A. 熬夜做重大决定或发要紧消息", s: 3}, {t: "B. 刷短视频逃避", s: 1}, {t: "C. 强迫自己按时睡觉，明天再说", s: 0}] },
+            { q: "Q6：当你看到朋友圈或小红书上，同龄人又升职加薪或到处旅行时，你会？", opts: [{t: "A. 极度焦虑，觉得自己很失败", s: 3}, {t: "B. 羡慕，但过会儿就忘了", s: 1}, {t: "C. 很少比较，或者直接给这类App设限", s: 0}] },
+            { q: "Q7：面对一个总是抱怨、疯狂消耗你的朋友或同事，你通常的反应是？", opts: [{t: "A. 不好意思拒绝，一直忍受", s: 3}, {t: "B. 偶尔附和几句", s: 1}, {t: "C. 果断拒绝，远离消耗型关系", s: 0}] },
+            { q: "Q8：在做需要深度思考的工作时，你的手机通常在哪？", opts: [{t: "A. 随时放在手边，来消息就看", s: 3}, {t: "B. 放手边但开静音", s: 1}, {t: "C. 放到视线之外，关掉非必要通知", s: 0}] },
+            { q: "Q9：当一个项目或者一段关系已经让你痛苦且没有希望，但你已经投入了三年，你会？", opts: [{t: "A. 觉得沉没成本太高，继续耗着", s: 3}, {t: "B. 纠结犹豫，走一步看一步", s: 1}, {t: "C. 只看未来投入和回报，果断止损", s: 0}] },
+            { q: "Q10：当事情发展不如预期，脑子里冒出“完蛋了，全毁了”这种悲观念头时，你觉得？", opts: [{t: "A. 觉得这是对未来的精准预测", s: 3}, {t: "B. 害怕，努力往好处想", s: 1}, {t: "C. 知道这只是一种情绪“症状”，不当成事实", s: 0}] }
+        ];
+
+        let currentQ = 0;
+        let totalScore = 0;
+
+        function startTest() {
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('question-screen').classList.remove('hidden');
+            showQuestion();
+        }
+
+        function showQuestion() {
+            const qData = questions[currentQ];
+            document.getElementById('progress').innerText = currentQ + 1;
+            document.getElementById('question-text').innerText = qData.q;
+            
+            const optsDiv = document.getElementById('options');
+            optsDiv.innerHTML = '';
+            qData.opts.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left bg-white border border-gray-200 p-4 rounded-lg hover:bg-red-50 hover:border-red-400 hover:text-red-600 transition shadow-sm text-sm font-medium";
+                btn.innerText = opt.t;
+                btn.onclick = () => answer(opt.s);
+                optsDiv.appendChild(btn);
+            });
+        }
+
+        function answer(score) {
+            totalScore += score;
+            currentQ++;
+            if (currentQ < questions.length) {
+                showQuestion();
+            } else {
+                showResult();
+            }
+        }
+
+        function showResult() {
+            document.getElementById('question-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+            document.getElementById('score').innerText = totalScore;
+            
+            let title = "", desc = "";
+            if (totalScore <= 9) {
+                title = "🔋【续航王者】";
+                desc = "你是绝对的人间清醒，外界的噪音很难干扰你的情绪内核，你懂得用最少的心力办最大的事。继续保持！";
+            } else if (totalScore <= 19) {
+                title = "🪫【漏电体质】";
+                desc = "你正处在内耗的边缘，很多时候你在为别人的期待买单。你需要一套标准化动作来打断反刍，找回你的时间定价权。";
+            } else {
+                title = "🚨【红灯警告：重度内耗者】";
+                desc = "你的后台程序开得太多了！每天70%的能量都消耗在“脑补”和“自我攻击”上。你需要立刻停止这种亏本的生活方式！";
+            }
+            
+            document.getElementById('result-title').innerText = title;
+            document.getElementById('result-desc').innerText = desc;
+        }
+    </script>
+</body>
+</html>
