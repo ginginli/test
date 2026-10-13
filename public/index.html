@@ -27,6 +27,7 @@
                     <p class="text-xs text-red-500 font-bold tracking-widest">基于《高性价比人生指南》研发</p>
                 </div>
                 <p class="text-sm text-gray-500 mt-2">请输入您的专属激活码进入测试</p>
+                <p class="text-xs text-red-400 mt-2 font-medium">⚠️ 激活码只可用于一次测试</p>
             </div>
             <input type="text" id="access-code" placeholder="请输入激活码" class="w-full px-4 py-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent text-center font-mono tracking-widest uppercase mb-4 transition bg-gray-50 text-lg">
             <p id="auth-error" class="text-red-500 text-sm text-center hidden mb-4">激活码无效或已被使用，请核对</p>
@@ -84,7 +85,10 @@
                 </div>
                 
                 <!-- 自动化提示文案 -->
-                <p id="save-tip" class="hidden text-xs text-center text-gray-400 mt-4 font-bold tracking-wide">✨ 画像海报已生成，长按上方图片即可保存</p>
+                <div id="save-tip" class="hidden mt-4 text-center px-4">
+                    <p class="text-xs text-gray-500 font-bold tracking-wide mb-1.5">✨ 画像海报已生成，长按上方图片即可保存</p>
+                    <p class="text-xs text-red-400 font-medium">⚠️ 激活码只可用于一次测试，请妥善保存结果，退出后可能无法再次查看结果</p>
+                </div>
             </div>
 
             <!-- 【图2】深度阅读区：全量重灾区展示与专属建议 -->
