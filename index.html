@@ -152,7 +152,7 @@
         let totalScore = 0;
         let userAnswers = [];
 
-        function verifyCode() {
+        async function verifyCode() {
             const btn = document.getElementById('verify-btn');
             const codeInput = document.getElementById('access-code').value.trim().toUpperCase();
             const errorMsg = document.getElementById('auth-error');
@@ -165,20 +165,35 @@
 
             btn.innerHTML = '验证中...';
             btn.disabled = true;
-            
-            const validCodes = ['VIP888', 'XHS2026', 'TEST001'];
-            setTimeout(() => {
-                if(validCodes.includes(codeInput)) {
+            errorMsg.classList.add('hidden');
+
+            try {
+                // 正式向 Vercel 后端发送查验请求
+                const response = await fetch('/api/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: codeInput })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // 验证通过，进入答题
                     document.getElementById('auth-screen').classList.add('hidden');
                     document.getElementById('question-screen').classList.remove('hidden');
                     showQuestion();
                 } else {
-                    errorMsg.innerText = '激活码无效或已被使用，请核对';
+                    // 拦截并显示具体的错误原因（如：已被使用、无效）
+                    errorMsg.innerText = data.error || '激活码无效或已被使用，请核对';
                     errorMsg.classList.remove('hidden');
-                    btn.innerHTML = '验证并开始测试';
-                    btn.disabled = false;
                 }
-            }, 500); 
+            } catch(e) {
+                errorMsg.innerText = '网络异常，请重试';
+                errorMsg.classList.remove('hidden');
+            } finally {
+                btn.innerHTML = '验证并开始测试';
+                btn.disabled = false;
+            }
         }
 
         function showQuestion() {
