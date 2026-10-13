@@ -1,30 +1,14 @@
-这份代码为您实现了一套可以直接用于商业售卖的轻量级 H5 系统。它不仅用 Tailwind CSS 实现了极其顺滑的UI，还通过 `html2canvas` 实现了前端一键生成专属诊断海报的裂变功能。
-
-针对您的5点商业化需求，这套方案内置了以下机制：
-
-* **权益核销系统（防止一码多用）**：在首页加入了一道“激活码”拦截门槛。前端做了一个基础的验证框架，您可以极低成本地将它与发卡平台或您的用户权益数据库打通，实现“一码一验”。
-* **进度与多维度动态感知**：顶部加入高亮进度条与当前所在维度提示，降低用户的中途跳出率。
-* **五大网感画像与专属处方**：根据总分动态渲染网感标签、专属Emoji插画，以及严格提取自《高性价比人生指南》的针对性行动建议。
-* **闭环裂变生图**：答题结束后生成一张可长按保存的海报，包含测试结果、建议和留空的专属二维码位，直接适配小红书和朋友圈的传播链路。
-
-以下是完整的可部署 HTML 代码，您可以直接保存为 `index.html`：
-
-```html
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>隐性内耗与情绪耗电量自测</title>
-    <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 引入 html2canvas 用于生成海报 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         .hidden { display: none; }
-        /* 海报专属渐变背景 */
         .poster-bg { background: linear-gradient(135deg, #fffcfc 0%, #fff1f1 100%); }
-        /* 避免海报截取时出现滚动条问题 */
         .capture-container { width: 100%; max-width: 400px; margin: 0 auto; }
     </style>
 </head>
@@ -32,67 +16,53 @@
 
     <div id="app" class="w-full max-w-md bg-white shadow-xl min-h-screen sm:min-h-[85vh] sm:rounded-2xl relative overflow-hidden flex flex-col">
         
-        <!-- 1. 购买激活码验证区 (Paywall) -->
+        <!-- 1. 激活码验证区 -->
         <div id="auth-screen" class="p-8 flex flex-col justify-center h-full flex-1">
-            <div class="text-center mb-8">
-                <div class="text-5xl mb-4">🎫</div>
-                <h1 class="text-2xl font-bold text-gray-800 mb-2">输入激活码进入测试</h1>
-                <p class="text-sm text-gray-500">本测试为专属付费内容，请输入您获取的单次激活码</p>
+            <div class="text-center mb-10">
+                <div class="text-5xl mb-4">🔋</div>
+                <h1 class="text-2xl font-bold text-gray-800 mb-2">隐性内耗指数自测</h1>
+                <p class="text-sm text-gray-500">请输入您的专属激活码</p>
             </div>
-            <input type="text" id="access-code" placeholder="请输入8位专属激活码" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent text-center font-mono tracking-widest uppercase mb-4 transition">
+            <input type="text" id="access-code" placeholder="请输入激活码" class="w-full px-4 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent text-center font-mono tracking-widest uppercase mb-4 transition bg-gray-50">
             <p id="auth-error" class="text-red-500 text-sm text-center hidden mb-4">激活码无效或已被使用，请核对</p>
-            <button onclick="verifyCode()" class="w-full bg-gray-800 text-white font-bold py-3 rounded-lg hover:bg-black transition shadow-lg">验证并进入</button>
+            <button onclick="verifyCode()" id="verify-btn" class="w-full bg-red-500 text-white font-bold py-4 rounded-xl hover:bg-red-600 transition shadow-lg text-lg">验证并开始测试</button>
         </div>
 
-        <!-- 2. 封面区 -->
-        <div id="start-screen" class="hidden p-8 flex flex-col justify-center h-full flex-1 text-center">
-            <h1 class="text-3xl font-extrabold text-red-500 mb-2 leading-tight">隐性内耗指数自测</h1>
-            <p class="text-gray-500 text-sm mb-8 tracking-wide">高维生存指南 ｜ 测测你的“每日情绪耗电量”</p>
-            <div class="bg-red-50 rounded-xl p-5 mb-10 text-left border border-red-100 relative">
-                <span class="absolute -top-3 left-4 bg-red-500 text-white text-xs px-2 py-1 rounded">⚠️ 诊断必读</span>
-                <p class="text-sm text-red-700 leading-relaxed mt-2">真正掏空你的不是工作量，而是你脑子里永不停歇的“后台程序”。<br><br>完成15道硬核拷问，获取《高性价比人生指南》专属于你的防漏电处方。</p>
-            </div>
-            <button onclick="startTest()" class="w-full bg-red-500 text-white font-bold py-4 rounded-xl hover:bg-red-600 transition shadow-xl text-lg">开始测试</button>
-        </div>
-
-        <!-- 3. 答题区 -->
+        <!-- 2. 答题区 -->
         <div id="question-screen" class="hidden flex-1 flex flex-col p-6 bg-white">
-            <!-- 进度条与维度 -->
             <div class="mb-6">
                 <div class="flex justify-between items-end mb-2">
-                    <span id="dimension-title" class="text-xs font-bold text-red-500 bg-red-50 px-2 py-1 rounded">维度加载中...</span>
-                    <span class="text-sm font-bold text-gray-400"><span id="progress-text" class="text-red-500 text-lg">1</span> / 15</span>
+                    <!-- 移除固定颜色，交由 JS 动态控制 -->
+                    <span id="dimension-title" class="text-xs font-bold px-2 py-1 rounded">加载中...</span>
+                    <span class="text-sm font-bold text-gray-400"><span id="progress-text" class="text-lg">1</span> / 15</span>
                 </div>
                 <div class="w-full bg-gray-100 rounded-full h-2">
-                    <div id="progress-bar" class="bg-red-400 h-2 rounded-full transition-all duration-300" style="width: 6.66%"></div>
+                    <!-- 移除固定颜色，交由 JS 动态控制 -->
+                    <div id="progress-bar" class="h-2 rounded-full transition-all duration-300" style="width: 6.66%"></div>
                 </div>
             </div>
             
-            <!-- 题目与选项 -->
             <div class="flex-1">
                 <h2 id="question-text" class="text-lg font-bold text-gray-800 mb-6 leading-relaxed"></h2>
                 <div id="options" class="space-y-4"></div>
             </div>
         </div>
 
-        <!-- 4. 生成中动画 -->
+        <!-- 3. 生成中动画 -->
         <div id="loading-screen" class="hidden p-8 flex flex-col justify-center items-center h-full flex-1">
             <div class="animate-spin text-5xl mb-4">⚙️</div>
-            <h2 class="text-xl font-bold text-gray-700">正在生成你的专属处方...</h2>
-            <p class="text-sm text-gray-400 mt-2">交叉比对《高性价比人生指南》数据库</p>
+            <h2 class="text-xl font-bold text-gray-700">正在生成诊断书...</h2>
+            <p class="text-sm text-gray-400 mt-2">交叉比对数据库中</p>
         </div>
 
-        <!-- 5. 结果海报生成区 -->
+        <!-- 4. 结果海报生成区 -->
         <div id="result-screen" class="hidden flex-col h-full bg-gray-50 overflow-y-auto">
-            <!-- 需要截图的区域 -->
             <div id="capture-area" class="capture-container poster-bg p-6 pb-8 relative shadow-sm">
-                <!-- 顶部标识 -->
                 <div class="text-center border-b border-red-100 pb-4 mb-6">
                     <p class="text-xs text-red-400 tracking-widest mb-1">PERSONAL ENERGY REPORT</p>
                     <h2 class="text-2xl font-extrabold text-gray-800">隐性内耗诊断书</h2>
                 </div>
                 
-                <!-- 核心画像 -->
                 <div class="flex items-center justify-between bg-white p-5 rounded-2xl shadow-sm mb-6 border border-gray-50">
                     <div class="flex-1 pr-4">
                         <p class="text-sm text-gray-400 mb-1">内耗指数得分</p>
@@ -102,17 +72,13 @@
                     <div id="result-avatar" class="text-6xl drop-shadow-md"></div>
                 </div>
 
-                <!-- 专属建议清单 -->
                 <div class="bg-white/80 rounded-xl p-5 mb-6 border border-red-50">
                     <h4 class="text-sm font-bold text-red-500 mb-3 flex items-center">
                         <span class="mr-2">💡</span>你的专属防漏电处方
                     </h4>
-                    <ul id="advice-list" class="space-y-3 text-sm text-gray-700 leading-relaxed">
-                        <!-- 动态插入建议 -->
-                    </ul>
+                    <ul id="advice-list" class="space-y-3 text-sm text-gray-700 leading-relaxed"></ul>
                 </div>
 
-                <!-- 底部引流区 (截图用的二维码位) -->
                 <div class="flex items-center justify-between pt-4 border-t border-gray-200 mt-4">
                     <div class="text-left">
                         <p class="text-xs font-bold text-gray-800">长按保存你的专属诊断卡</p>
@@ -123,7 +89,6 @@
                 </div>
             </div>
 
-            <!-- 操作按钮 (不在截图中) -->
             <div class="p-6 bg-white border-t border-gray-100 mt-auto">
                 <button onclick="generateImage()" id="save-btn" class="w-full bg-red-500 text-white font-bold py-3.5 rounded-xl hover:bg-red-600 transition shadow-md flex justify-center items-center">
                     <span class="mr-2">📸</span> 生成海报保存至相册
@@ -131,22 +96,20 @@
                 <p class="text-xs text-center text-gray-400 mt-3">生成图片后长按即可保存分享</p>
             </div>
         </div>
-
     </div>
 
     <script>
-        /* 题库数据：包含维度与题目 */
         const questions = [
             { d: "维度一：情绪与人际高敏区", q: "Q1：开会或聚餐时说错了一句话，当天晚上你的状态是？", opts: [{t: "A. 经常中枪，反复回想", s: 3}, {t: "B. 偶尔这样，睡一觉就好", s: 1}, {t: "C. 几乎不想，说过就忘", s: 0}] },
             { d: "维度一：情绪与人际高敏区", q: "Q2：当你的工作/生活做不到100分时，你是否觉得“别人一定会彻底否定我”？", opts: [{t: "A. 经常这么觉得", s: 3}, {t: "B. 偶尔有这种压力", s: 1}, {t: "C. 尽力就好，不强求完美", s: 0}] },
-            { d: "维度一：情绪与人际高敏区", q: "Q3：当你看到朋友圈或小红书上，同龄人又升职加薪或到处旅行时，你会？", opts: [{t: "A. 极度焦虑，觉得自己很失败", s: 3}, {t: "B. 羡慕，但过会儿就忘了", s: 1}, {t: "C. 很少比较，或者直接给这类App设限", s: 0}] },
+            { d: "维度一：情绪与人际高敏区", q: "Q3：当你看到朋友圈或小红书上，同龄人又升职加薪或到处旅行时，你会？", opts: [{t: "A. 极度焦虑，觉得自己很失败", s: 3}, {t: "B. 羡慕，但过会儿就忘了", s: 1}, {t: "C. 很少比较，或直接给这类App设限", s: 0}] },
             { d: "维度一：情绪与人际高敏区", q: "Q4：面对一个总是抱怨、疯狂消耗你的朋友或同事，你通常的反应是？", opts: [{t: "A. 不好意思拒绝，一直忍受", s: 3}, {t: "B. 偶尔附和几句", s: 1}, {t: "C. 果断拒绝，远离消耗型关系", s: 0}] },
             { d: "维度一：情绪与人际高敏区", q: "Q5：去办事或就医时遇到工作人员态度不好、流程繁琐，你通常会？", opts: [{t: "A. 非常生气，觉得针对自己，反复复述委屈", s: 3}, {t: "B. 当场生气，但办完就算了", s: 1}, {t: "C. 只关注拿回执记期限，把对方当按规则办事的NPC", s: 0}] },
             
             { d: "维度二：行动与认知瘫痪区", q: "Q6：遇到一件极其糟心、想不通的事情时，你会怎么做？", opts: [{t: "A. 停在原地反复琢磨", s: 3}, {t: "B. 找人疯狂吐槽", s: 1}, {t: "C. 立刻去干点需要动手的活", s: 0}] },
             { d: "维度二：行动与认知瘫痪区", q: "Q7：当一个项目或者一段关系已经让你痛苦且没有希望，但你已经投入了三年，你会？", opts: [{t: "A. 觉得沉没成本太高，继续耗着", s: 3}, {t: "B. 纠结犹豫，走一步看一步", s: 1}, {t: "C. 只看未来投入和回报，果断止损", s: 0}] },
             { d: "维度二：行动与认知瘫痪区", q: "Q8：当事情发展不如预期，脑子里冒出“完蛋了，全毁了”这种悲观念头时，你觉得？", opts: [{t: "A. 觉得这是对未来的精准预测", s: 3}, {t: "B. 害怕，努力往好处想", s: 1}, {t: "C. 知道这是一种情绪症状，不当成事实", s: 0}] },
-            { d: "维度二：行动与认知瘫痪区", q: "Q9：当一件事情没有明确的外部截止日期（比如自己想学个技能）时，你通常会？", opts: [{t: "A. 永远挂在脑子里，一直不动手", s: 3}, {t: "B. 等心情好了再做", s: 1}, {t: "C. 自己给它定一个死期限并认账", s: 0}] },
+            { d: "维度二：行动与认知瘫痪区", q: "Q9：当一件事情没有明确的外部截止日期（比如学个技能）时，你通常会？", opts: [{t: "A. 永远挂在脑子里，一直不动手", s: 3}, {t: "B. 等心情好了再做", s: 1}, {t: "C. 自己给它定一个死期限并认账", s: 0}] },
             { d: "维度二：行动与认知瘫痪区", q: "Q10：在做需要连贯思考的工作时，突然收到一条不太紧急的微信，你会？", opts: [{t: "A. 立刻停下来回复", s: 3}, {t: "B. 看一眼，等手头事结束再回", s: 1}, {t: "C. 专注当前，按设定的固定时间批处理", s: 0}] },
             
             { d: "维度三：生理与物理漏电区", q: "Q11：白天受了委屈或感到极度愤怒时，你会选择以下哪种发泄方式？", opts: [{t: "A. 摔东西、疯狂跑步等让身体兴奋的方式", s: 3}, {t: "B. 暴饮暴食", s: 1}, {t: "C. 深呼吸、静坐等让身体慢下来的方式", s: 0}] },
@@ -156,46 +119,45 @@
             { d: "维度三：生理与物理漏电区", q: "Q15：面对海量的群消息、短视频推送，你的习惯是？", opts: [{t: "A. 一响秒回，不断刷新生怕错过", s: 3}, {t: "B. 偶尔集中清理，但常点开推送", s: 1}, {t: "C. 屏蔽非必要通知，给App设硬上限", s: 0}] }
         ];
 
-        /* 基于《高性价比人生指南》的梯队诊断与操作建议 */
         const tierData = [
             {
                 max: 9, title: "永动机体质", avatar: "🛡️",
                 advice: [
-                    "<b>稳固底盘：</b>继续保持固定起床时间（周末也一样），这是你超强续航的基础[cite: 61, 62]。",
-                    "<b>流程防御：</b>办事就医遇到阻碍，继续把对方当按规则办事的“NPC”，依靠文书和期限推进，杜绝情绪代入[cite: 71]。",
-                    "<b>物理急救：</b>偶尔情绪低落时性价比最高的做法：动起来、晒太阳、按时睡[cite: 70, 71]。"
+                    "<b>稳固底盘：</b>继续保持固定起床时间（周末也一样），这是你超强续航的基础。",
+                    "<b>流程防御：</b>办事就医遇到阻碍，继续把对方当按规则办事的“NPC”，依靠文书和期限推进，杜绝情绪代入。",
+                    "<b>物理急救：</b>偶尔情绪低落时性价比最高的做法：动起来、晒太阳、按时睡。"
                 ]
             },
             {
                 max: 18, title: "薛定谔的松弛感", avatar: "🪫",
                 advice: [
-                    "<b>物理隔离：</b>做深度工作时，把手机放到视线之外，切断仅需2.8秒就会让错误率翻倍的致命打断[cite: 61, 63]。",
-                    "<b>信息截断：</b>给刷同龄人动态的App设定硬上限，把需要看的信息改成定时集中看[cite: 71, 79, 82]。",
-                    "<b>切断比较毒源：</b>习惯向上比较会让情绪变差，戒掉它，把眼睛收回自己的进度条[cite: 71, 72]。"
+                    "<b>物理隔离：</b>做深度工作时，把手机放到视线之外，切断仅需2.8秒就会让错误率翻倍的致命打断。",
+                    "<b>信息截断：</b>给刷同龄人动态的App设定硬上限，把需要看的信息改成定时集中看。",
+                    "<b>切断比较毒源：</b>习惯向上比较会让情绪变差，戒掉它，把眼睛收回自己的进度条。"
                 ]
             },
             {
                 max: 27, title: "高耗能待机", avatar: "🎭",
                 advice: [
-                    "<b>除以二法则：</b>觉得“全场都在看我出丑”时，把你估计的人数直接除以二，别在脑补中浪费电量[cite: 72, 73]。",
-                    "<b>清理消耗源：</b>人际交往是有账本的，一个消耗你的人造成的损失远大于支持者的补给。学会果断拒绝[cite: 69, 70]。",
-                    "<b>多任务幻觉：</b>不要边开会边回消息，任务一切换反应变慢且易出错，一次只做一件事[cite: 66, 67]。"
+                    "<b>除以二法则：</b>觉得“全场都在看我出丑”时，把你估计的人数直接除以二，别在脑补中浪费电量。",
+                    "<b>清理消耗源：</b>人际交往是有账本的，一个消耗你的人造成的损失远大于支持者的补给。学会果断拒绝。",
+                    "<b>多任务幻觉：</b>不要边开会边回消息，任务一切换反应变慢且易出错，一次只做一件事。"
                 ]
             },
             {
                 max: 36, title: "沉没成本囚徒", avatar: "⛓️",
                 advice: [
-                    "<b>强制斩断反刍：</b>发现自己在反复回想糟心事，立刻去干一件需要动手的事（如洗碗），想是想不通的[cite: 69]。",
-                    "<b>无视沉没成本：</b>决定是否继续死磕时，只算未来投入和回报，已经花掉的全部当成0[cite: 77, 78]。",
-                    "<b>人造死线：</b>没有截止日期的事情，自己硬定一个日期并认账，不要等心情好了再做[cite: 79, 80]。"
+                    "<b>强制斩断反刍：</b>发现自己在反复回想糟心事，立刻去干一件需要动手的事（如洗碗），想是想不通的。",
+                    "<b>无视沉没成本：</b>决定是否继续死磕时，只算未来投入和回报，已经花掉的全部当成0。",
+                    "<b>人造死线：</b>没有截止日期的事情，自己硬定一个日期并认账，不要等心情好了再做。"
                 ]
             },
             {
                 max: 45, title: "系统崩盘边缘", avatar: "🚨",
                 advice: [
-                    "<b>23:00强制熔断：</b>深夜绝对不做重大决定、不发要紧消息，人在缺觉时极易选择高风险错误选项[cite: 68]。",
-                    "<b>悲观当感冒治：</b>脑子里冒出“完蛋了”的念头时，把它当成躯体症状看，绝不要当成事实预测[cite: 69]。",
-                    "<b>降火别靠砸：</b>生气时别靠砸东西发泄，那只会让身体兴奋；用深呼吸等方式让身体慢下来才能真正消气[cite: 74]。"
+                    "<b>23:00强制熔断：</b>深夜绝对不做重大决定、不发要紧消息，人在缺觉时极易选择高风险错误选项。",
+                    "<b>悲观当感冒治：</b>脑子里冒出“完蛋了”的念头时，把它当成躯体症状看，绝不要当成事实预测。",
+                    "<b>降火别靠砸：</b>生气时别靠砸东西发泄，那只会让身体兴奋；用深呼吸等方式让身体慢下来才能真正消气。"
                 ]
             }
         ];
@@ -203,37 +165,73 @@
         let currentQ = 0;
         let totalScore = 0;
 
-        /* 1. 简易核销码验证 (前端演示版，正式上线请替换为后端API验证) */
         function verifyCode() {
+            const btn = document.getElementById('verify-btn');
             const codeInput = document.getElementById('access-code').value.trim().toUpperCase();
             const errorMsg = document.getElementById('auth-error');
             
-            // 演示用的有效码集合，实际开发中请请求后端接口核销
+            if (!codeInput) {
+                errorMsg.innerText = '请输入激活码';
+                errorMsg.classList.remove('hidden');
+                return;
+            }
+
+            btn.innerHTML = '验证中...';
+            btn.disabled = true;
+            
             const validCodes = ['VIP888', 'XHS2026', 'TEST001'];
             
-            if(validCodes.includes(codeInput)) {
-                document.getElementById('auth-screen').classList.add('hidden');
-                document.getElementById('start-screen').classList.remove('hidden');
-                // 可选：将该码从有效集合中移除，或写入本地存储防止刷新重复使用
-            } else {
-                errorMsg.classList.remove('hidden');
-            }
+            setTimeout(() => {
+                if(validCodes.includes(codeInput)) {
+                    document.getElementById('auth-screen').classList.add('hidden');
+                    document.getElementById('question-screen').classList.remove('hidden');
+                    showQuestion();
+                } else {
+                    errorMsg.innerText = '激活码无效或已被使用，请核对';
+                    errorMsg.classList.remove('hidden');
+                    btn.innerHTML = '验证并开始测试';
+                    btn.disabled = false;
+                }
+            }, 500); 
         }
 
-        /* 2. 开始测试 */
-        function startTest() {
-            document.getElementById('start-screen').classList.add('hidden');
-            document.getElementById('question-screen').classList.remove('hidden');
-            showQuestion();
-        }
-
-        /* 3. 渲染题目与进度条 */
         function showQuestion() {
             const qData = questions[currentQ];
             
-            // 更新进度条和维度
+            // 更新进度数字及宽度
             document.getElementById('progress-text').innerText = currentQ + 1;
             document.getElementById('progress-bar').style.width = ((currentQ + 1) / 15 * 100) + "%";
+            
+            // 动态切换维度颜色
+            const dimTitle = document.getElementById('dimension-title');
+            const progText = document.getElementById('progress-text');
+            const progBar = document.getElementById('progress-bar');
+            
+            // 每次切换先清空之前注入的颜色相关类
+            dimTitle.className = "text-xs font-bold px-2 py-1 rounded";
+            progText.className = "text-lg font-bold";
+            progBar.className = "h-2 rounded-full transition-all duration-300";
+
+            let themeText, themeBg, themeBar;
+            
+            if (qData.d.includes("维度一")) {
+                themeText = "text-blue-500";
+                themeBg = "bg-blue-50";
+                themeBar = "bg-blue-400";
+            } else if (qData.d.includes("维度二")) {
+                themeText = "text-purple-500";
+                themeBg = "bg-purple-50";
+                themeBar = "bg-purple-400";
+            } else {
+                themeText = "text-red-500";
+                themeBg = "bg-red-50";
+                themeBar = "bg-red-400";
+            }
+
+            dimTitle.classList.add(themeText, themeBg);
+            progText.classList.add(themeText);
+            progBar.classList.add(themeBar);
+            
             document.getElementById('dimension-title').innerText = qData.d;
             document.getElementById('question-text').innerText = qData.q;
             
@@ -241,7 +239,7 @@
             optsDiv.innerHTML = '';
             qData.opts.forEach(opt => {
                 const btn = document.createElement('button');
-                btn.className = "w-full text-left bg-gray-50 border border-gray-200 p-4 rounded-xl hover:bg-red-50 hover:border-red-400 hover:text-red-700 transition shadow-sm text-sm font-medium focus:bg-red-100";
+                btn.className = "w-full text-left bg-gray-50 border border-gray-200 p-4 rounded-xl hover:bg-gray-100 hover:border-gray-300 transition shadow-sm text-sm font-medium focus:bg-gray-200";
                 btn.innerText = opt.t;
                 btn.onclick = () => answer(opt.s);
                 optsDiv.appendChild(btn);
@@ -258,21 +256,18 @@
             }
         }
 
-        /* 4. 处理结果并展示 loading 动效 */
         function processResult() {
             document.getElementById('question-screen').classList.add('hidden');
             document.getElementById('loading-screen').classList.remove('hidden');
             
-            // 模拟计算延迟，增加专业感
             setTimeout(() => {
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('result-screen').classList.remove('hidden');
-                document.getElementById('result-screen').classList.add('flex'); // 恢复flex布局
+                document.getElementById('result-screen').classList.add('flex'); 
                 renderResult();
             }, 1500);
         }
 
-        /* 5. 渲染最终海报数据 */
         function renderResult() {
             document.getElementById('score').innerText = totalScore;
             
@@ -291,7 +286,6 @@
             });
         }
 
-        /* 6. 生成图片供用户长按保存 */
         function generateImage() {
             const btn = document.getElementById('save-btn');
             btn.innerHTML = '<span class="mr-2">⌛</span> 正在生成专属海报...';
@@ -300,21 +294,15 @@
             const captureArea = document.getElementById('capture-area');
             
             html2canvas(captureArea, {
-                scale: 2, // 提高清晰度
+                scale: 2, 
                 useCORS: true,
                 backgroundColor: "#ffffff"
             }).then(canvas => {
-                // 将画布转换为图片URL
                 const imgData = canvas.toDataURL('image/png');
-                
-                // 将原DOM替换为生成的图片，用户即可长按保存
                 captureArea.innerHTML = `<img src="${imgData}" class="w-full h-auto rounded-xl shadow-md" alt="你的测试海报">`;
-                
                 btn.innerHTML = '<span class="mr-2">✅</span> 长按上方海报保存';
             });
         }
     </script>
 </body>
 </html>
-
-```
